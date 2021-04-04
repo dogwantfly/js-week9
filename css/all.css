@@ -1,0 +1,12 @@
+ul {
+    list-style: none; 
+    padding-left: 0px;   
+}
+.form-select {
+    width: 300px;
+}
+.cart-item-img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
