@@ -1,10 +1,3 @@
-// let headers = {
-//   headers: {
-//     accept: "application/json",
-//     authorization: "hRZMCzzUpvYCLCuIlqiu3h2h9Hx2",
-//     "Content-Type": "application/json"
-//   }
-// };
 let productData;
 let cartListData;
 const productList = document.querySelector(".row.list");

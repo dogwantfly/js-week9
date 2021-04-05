@@ -27,7 +27,7 @@ let render = (data) => {
           <td>${item.products[0].title}</td>
           <td>${item.createdAt}</td>
           <td><a href="#" class="orderState">${orderStateStr}</a></td>
-          <td><button type="button" class="btn btn-primary">刪除</button></td>
+          <td><button type="button" class="btn btn-primary btn-delete">刪除</button></td>
         </tr>`
     })
     
@@ -153,4 +153,29 @@ let deleteAllOrder = () => {
 }
 removeOrderAllBtn.addEventListener("click", () => {
   deleteAllOrder();
+})
+//------------------------------------------------------
+// 刪除特定訂單
+let deleteOrder = (orderId) => {
+  axios.delete(
+    `https://hexschoollivejs.herokuapp.com/api/livejs/v1/admin/hsinyu/orders/${orderId}`,
+    headers
+  ).then(function (response) {
+    // 成功會回傳的內容
+    console.log(response);
+    orderData = response.data.orders;
+    render(orderData);
+  })
+  .catch(function (error) {
+    // 失敗會回傳的內容
+    console.log(error);
+  });
+}
+backendTable.addEventListener("click", (e) => {
+  if (!(e.target.classList.contains("btn-delete"))) return;
+  e.preventDefault();
+  console.log(e.target.closest("tr").querySelector("td").textContent);
+  let order = orderData.filter(order => order.id === e.target.closest("tr").querySelector("td").textContent)
+  console.log(order[0].id);
+  deleteOrder(order[0].id);
 })
