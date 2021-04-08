@@ -10,3 +10,6 @@ ul {
     height: 100px;
     object-fit: cover;
 }
+.text-truncate{
+    white-space: inherit;;
+}

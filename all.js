@@ -2,12 +2,12 @@ let productData;
 let cartListData;
 const productList = document.querySelector(".row.list");
 const productSelect = document.querySelector("select.form-select");
+let quantityInputs;
 // 取得產品列表
-axios
-  .get(
-    "https://hexschoollivejs.herokuapp.com/api/livejs/v1/customer/hsinyu/products",
-    headers
-  )
+let getProductList = () => {
+  const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/products`;
+  axios
+  .get( url, config)
   .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
@@ -19,40 +19,80 @@ axios
     // 失敗會回傳的內容
     console.log(error);
   });
+}
+getProductList();
 
 //--------------------------------------------------------------
 // 加入購物車
 
-let addCart = (productId) => {
+let addCart = (productId, quantity) => {
+  const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/carts`;
   axios
   .post(
-    "https://hexschoollivejs.herokuapp.com/api/livejs/v1/customer/hsinyu/carts",
+    url,
     {
       data:{
-        productId: productId,
-        quantity: 1
+        productId,
+        quantity,
       }
-    },
-    headers
+    }
   )
   .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
+    if (response.data.status) {
+      alert(`成功加入購物車！`);
+    }
     getCartList();
   })
   .catch(function (error) {
     // 失敗會回傳的內容
     console.log(error);
+    alert(error.response.data.message);
   });
 }
 productList.addEventListener("click", (e) => {
   if (!(e.target.classList.contains("btn-cart"))) return;
   e.preventDefault();
-  console.log(e.target.closest("li").querySelector("h5").textContent);
-  let product = productData.filter(product => product.title === e.target.closest("li").querySelector("h5").textContent)
-  console.log(product[0].id);
-  addCart(product[0].id);
+  let productId = e.target.dataset.id;
+  let quantity;
+  console.log(cartListData.filter(cartItem => cartItem.product.id === productId));
+  let productArray = cartListData.filter(cartItem => cartItem.product.id === productId)
+  if (productArray.length > 0) {
+    quantity = productArray[0].quantity + 1
+  } else {
+    quantity = 1;
+  }
+  addCart(productId, quantity);
 })
+// ----------------------------
+// 編輯購物車產品數量
+let editCartQuantity = (cartId, quantity) => {
+  const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/carts`;
+  axios
+  .patch(
+    url,
+    {
+      data:{
+        id: cartId,
+        quantity: quantity
+      }
+    },
+    config
+  )
+  .then(function (response) {
+    // 成功會回傳的內容
+    console.log(response);
+    cartListData = response.data.carts;
+    console.log(cartListData);
+    renderCartList(cartListData);
+  })
+  .catch(function (error) {
+    // 失敗會回傳的內容
+    console.log(error.response);
+    alert(error.response.data.message)
+  });
+}
 
 
 // ----------------------------------------------------------------
@@ -70,7 +110,7 @@ let renderProductList = (data) => {
         <div class="text-center">
           <p class="card-text text-center">原價：<del>${product.origin_price}</del></p>
           <p class="card-text text-center fst-italic">$${product.price}</p>
-          <a href="#" class="btn btn-primary d-inline-block btn-cart">加入購物車</a>
+          <a href="#" class="btn btn-primary d-inline-block btn-cart" data-id="${product.id}">加入購物車</a>
         </div>
       </div>
     </div>
@@ -113,15 +153,9 @@ searchBtn.addEventListener("click", searchProduct);
 // ------------------------------
 // 取得購物車內容
 let getCartList = () => {
+  const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/carts`;
   axios
-  .get(
-    "https://hexschoollivejs.herokuapp.com/api/livejs/v1/customer/hsinyu/carts",
-    {
-      headers: {
-        accept: "application/json"
-      }
-    }
-  )
+  .get(url)
   .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
@@ -131,7 +165,8 @@ let getCartList = () => {
   })
   .catch(function (error) {
     // 失敗會回傳的內容
-    console.log(error);
+    console.log(error.response);
+    alert(`請確認 API Path 是否已申請 (っ˘ω˘ς )`);
   });
 }
 getCartList();
@@ -142,13 +177,19 @@ let renderCartList = (data) => {
   let str = "";
   data.forEach((cart) => {
     str += `
-    <tr>
+    <tr data-id="${cart.id}">
       <td>
         <img class="cart-item-img" src="${cart.product.images}">
         ${cart.product.title}
       </td>
       <td>NT$ ${cart.product.price}</td>
-      <td>${cart.quantity}</td>
+      <td>
+      <div class="input-group" role="group">
+        <button type="button" class="btn btn-outline-secondary">-</button>
+        <div class="input-group-text"">${cart.quantity}</div>
+        <button type="button" class="btn btn-outline-secondary">+</button>
+      </div>
+      </td>
       <td>${cart.product.price * cart.quantity}</td>
       <td><a href="#" class="removeCartItem">x</a></td>
     </tr>`
@@ -159,56 +200,63 @@ let renderCartList = (data) => {
 //刪除全部購物車內容
 const removeCartsBtn = document.querySelector("#removeCarts");
 let deleteCartList = () => {
-  axios.delete(
-    "https://hexschoollivejs.herokuapp.com/api/livejs/v1/customer/hsinyu/carts",
-    {
-      headers: {
-        accept: "application/json"
-      }
-    }
-  ).then(function (response) {
+  const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/carts`;
+  axios.delete(url)
+  .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
     getCartList();
-    // orderData = response.data.orders;
-    // render(orderData);
   })
   .catch(function (error) {
     // 失敗會回傳的內容
-    console.log(error);
+    console.log(error.response);
+    alert(error.response.data.message)
   });
 }
 removeCartsBtn.addEventListener("click", deleteCartList);
 // ------------------------------
 //刪除特定購物車內容
 let deleteCartProduct = (cartId) => {
-  axios.delete(
-    `https://hexschoollivejs.herokuapp.com/api/livejs/v1/customer/hsinyu/carts/${cartId}`,
-    {
-      headers: {
-        accept: "application/json"
-      }
-    }
-  ).then(function (response) {
+  const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/carts/${cartId}`;
+  axios.delete(url)
+  .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
     getCartList();
-    // orderData = response.data.orders;
-    // render(orderData);
+    if (response.data.status) {
+      alert(`成功刪除！`)
+    } else {
+      alert(response.data.message);
+    }
   })
   .catch(function (error) {
     // 失敗會回傳的內容
-    console.log(error);
+    console.log(error.response);
+    alert(`請確認 API Path 是否已申請 (っ˘ω˘ς )`)
   });
 }
-// 抓刪除特定購物車的 ID，測試刪除特定購物車
+// 抓刪除特定購物車的 ID，測試刪除特定購物車、編輯購物車產品數量
 cartTable.addEventListener("click", (e) => {
-  if (!(e.target.classList.contains("removeCartItem"))) return;
   e.preventDefault();
-  console.log();
-  let cart = cartListData.filter(cart => cart.product.title === e.target.closest("tr").querySelector("td").textContent.trim())
-  console.log(cart[0].id);
-  deleteCartProduct(cart[0].id);
+  if (e.target.classList.contains("removeCartItem")) {
+    let cart = cartListData.filter(cart => cart.product.title === e.target.closest("tr").querySelector("td").textContent.trim())
+    console.log(cart[0].id);
+    deleteCartProduct(cart[0].id);
+  } else if (e.target.classList.contains("btn", "btn-outline-secondary")) {
+    console.log(e.target)
+    let quantity;
+    if (e.target.textContent === "+") {
+      quantity = Number(e.target.previousElementSibling.textContent)
+      quantity++
+    } else if (e.target.textContent === "-") {
+      quantity = Number(e.target.nextElementSibling.textContent);
+      if (quantity <= 1) return;
+      quantity--;
+    }
+    let carttId = e.target.closest("tr").dataset.id;
+    console.log(carttId)
+    editCartQuantity(carttId, quantity)
+  }
 })
 // validate.js
 let constraints = {
@@ -220,11 +268,18 @@ let constraints = {
   tel: {
     presence: {
       message: "是必填欄位"
+    },
+    length: {
+      minimum: 8,
+      tooShort: "電話號碼至少需八碼"
     }
   },
   email: {
     presence: {
       message: "是必填欄位"
+    },
+    email: {
+      message: "信箱格式需正確"
     }
   },
   address: {
@@ -281,14 +336,10 @@ let sentOrder = () => {
   const email = document.querySelector("#email").value;
   const address = document.querySelector("#address").value;
   const payment = document.querySelector("#payment").value;
-  console.log(name,      
-    tel,      
-    email,      
-    address,      
-    payment,   )
+  const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/orders`;
   axios
   .post(
-    "https://hexschoollivejs.herokuapp.com/api/livejs/v1/customer/hsinyu/orders",
+    url,
     {
       data:{
         user: {      
@@ -299,22 +350,21 @@ let sentOrder = () => {
           payment,   
         }
       }
-    },
-    {
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json"
-      }
     }
   )
   .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
-    getOrderData()
+    getOrderData();
+    getCartList();
+    renderCartList(cartListData);
     render(orderData);
+    alert("成功送出訂單！")
   })
   .catch(function (error) {
     // 失敗會回傳的內容
-    console.log(error);
+    console.log(error.response);
+    alert(error.response.data.message)
   });
 }
+

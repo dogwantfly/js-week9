@@ -1,13 +1,14 @@
 const backendTable = document.querySelector('#backendTable');
 let orderData;
 const removeOrderAllBtn = document.querySelector(".removeOrderAllBtn");
-let headers = {
+const api_path = "hsinyu";
+const baseUrl = "https://hexschoollivejs.herokuapp.com";
+const config = {
   headers: {
-    accept: "application/json",
-    authorization: "hRZMCzzUpvYCLCuIlqiu3h2h9Hx2",
-    "Content-Type": "application/json"
+    Authorization: 'hRZMCzzUpvYCLCuIlqiu3h2h9Hx2'
   }
-};
+}
+// 渲染訂單
 let render = (data) => {
     let str = "";
     data.forEach((item) => {
@@ -17,14 +18,19 @@ let render = (data) => {
         } else {
             orderStateStr = "未處理";
         }
-
+        let productTitleStr = item.products[0].title;
+        item.products.forEach((product, index) => {
+          if (index === 0) return;
+          productTitleStr += `、${product.title}`
+        })
+        console.log(productTitleStr);
         str += `
         <tr>
           <td class="order-id">${item.id}</td>
           <td>${item.user.name}</td>
           <td>${item.user.address}</td>
           <td>${item.user.email}</td>
-          <td>${item.products[0].title}</td>
+          <td class="text-truncate w-25">${productTitleStr}</td>
           <td>${item.createdAt}</td>
           <td><a href="#" class="orderState">${orderStateStr}</a></td>
           <td><button type="button" class="btn btn-primary btn-delete">刪除</button></td>
@@ -35,49 +41,24 @@ let render = (data) => {
 }
 // 呈現訂單列表
 let getOrderData = () => {
+  const url = `${baseUrl}/api/livejs/v1/admin/${api_path}/orders`;
   axios
-  .get(
-    "https://hexschoollivejs.herokuapp.com/api/livejs/v1/admin/hsinyu/orders",
-    headers
-  )
+  .get(url, config)
   .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
     orderData = response.data.orders;
-    // console.log(orderData);
-    let productObj = {};
-    orderData.forEach((item,index) => {
-      orderData[index].products.forEach((product) => {
-        if (productObj[product.title] == undefined) {
-          productObj[product.title] = (product.price) * (product.quantity);
-          // console.log(product.price ,product.quantity)
-        } else {
-          productObj[product.title] += (product.price) * (product.quantity);
-          // console.log(product.price ,product.quantity)
-        }
-      })
-    });
-    //console.log(productObj);
-    let productTitle = [];
-    productTitle = Object.keys(productObj);
-    // console.log(productTitle);
-    let columns = [];
-    productTitle.forEach((item) => {
-      columns.push([item, productObj[item]]);
-    });
-    // console.log(columns);
-    addChart(columns);
+    if (orderData.length > 0) {
+      addChart();
+    } else {
+      document.querySelector('#revenueChart').innerHTML = '';
+    }
     render(orderData);
-    let tableRow = backendTable.querySelectorAll('tr');
-    tableRow = [...tableRow];
-    // console.log(tableRow);
-    tableRow.forEach((tr,index) => {
-      tr.dataset.id = index + 1;
-    })
   })
   .catch(function (error) {
     // 失敗會回傳的內容
     console.log(error);
+    alert("請確認 API Path 是否已申請 (っ˘ω˘ς )");
   });
 }
 getOrderData();
@@ -88,17 +69,19 @@ let modifyOrderData = (str,orderID) => {
   if (str === "未處理") {
     orderPaid = false;
   }
+  const url = `${baseUrl}/api/livejs/v1/admin/${api_path}/orders`;
   console.log(orderID);
+
   axios
     .put(
-      "https://hexschoollivejs.herokuapp.com/api/livejs/v1/admin/hsinyu/orders",
+      url,
       {
         data:{
           id: orderID,
           paid: (!orderPaid)
         }
       },
-      headers
+      config
     )
     .then(function (response) {
       // 成功會回傳的內容
@@ -108,67 +91,101 @@ let modifyOrderData = (str,orderID) => {
     })
     .catch(function (error) {
       // 失敗會回傳的內容
-      console.log(error);
+      console.log(error.response);
+      alert(error.response.data.message)
     });
 }
 backendTable.addEventListener("click", (e) => {
   e.preventDefault();
-  if (!(e.target.classList.contains("orderState"))) {
-      return;
-  }
+  if (!(e.target.classList.contains("orderState"))) return;
   let orderID = e.target.closest("tr").querySelector(".order-id").textContent
   modifyOrderData(e.target.textContent,orderID)
 })
 //------------------------------------------------------
 // c3 圖表
-let addChart = (columns) => {
-  // console.log(columns);
+let addChart = () => {
+  console.log(orderData);
+  let columns = [];
+    let productObj = {};
+    orderData.forEach((item,index) => {
+      orderData[index].products.forEach((product) => {
+        if (productObj[product.title] == undefined) {
+          productObj[product.title] = (product.price) * (product.quantity);
+        } else {
+          productObj[product.title] += (product.price) * (product.quantity);
+        }
+      })
+    });
+    //console.log(productObj);
+    let productTitle = [];
+    productTitle = Object.keys(productObj);
+    // console.log(productTitle);
+    
+    productTitle.forEach((item) => {
+      columns.push([item, productObj[item]]);
+    });
+  console.log(columns);
   let revenueChart = c3.generate({
     bindto: "#revenueChart",
     data: {
       columns: columns,
-      type: "donut"
+      type: 'pie'
     },
-    donut: {
-      title: "營收"
+    pie: {
+      label: {
+        show: false
+      }
+    },
+    color: {
+      pattern: ['#cd7b29', '#8bc5cd', '#5a9ca4', '#b4e6ee', '#832900', '#297383', '#e6ac5a' ,'#ffd56a']
     }
   });
 };
 //------------------------------------------------------
 // 刪除全部訂單
 let deleteAllOrder = () => {
-  axios.delete(
-    "https://hexschoollivejs.herokuapp.com/api/livejs/v1/admin/hsinyu/orders",
-    headers
-  ).then(function (response) {
+  const url = `${baseUrl}/api/livejs/v1/admin/${api_path}/orders`;
+  axios.delete(url, config)
+  .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
     orderData = response.data.orders;
+    if (orderData.length > 0) {
+      addChart();
+    } else {
+      document.querySelector('#revenueChart').innerHTML = '';
+    }
     render(orderData);
+    alert(response.data.message)
   })
   .catch(function (error) {
     // 失敗會回傳的內容
-    console.log(error);
+    console.log(error.response.data.message);
+    alert(error.response.data.message)
   });
 }
-removeOrderAllBtn.addEventListener("click", () => {
-  deleteAllOrder();
-})
+removeOrderAllBtn.addEventListener("click", deleteAllOrder)
 //------------------------------------------------------
 // 刪除特定訂單
 let deleteOrder = (orderId) => {
-  axios.delete(
-    `https://hexschoollivejs.herokuapp.com/api/livejs/v1/admin/hsinyu/orders/${orderId}`,
-    headers
-  ).then(function (response) {
+  const url = `${baseUrl}/api/livejs/v1/admin/${api_path}/orders/${orderId}`;
+  axios.delete(url, config)
+  .then(function (response) {
     // 成功會回傳的內容
     console.log(response);
     orderData = response.data.orders;
+    if (orderData.length > 0) {
+      addChart();
+    } else {
+      document.querySelector('#revenueChart').innerHTML = '';
+    }
     render(orderData);
+    alert("刪除訂單成功")
   })
   .catch(function (error) {
     // 失敗會回傳的內容
-    console.log(error);
+    console.log(error.response);
+    alert(error.response.data.message)
   });
 }
 backendTable.addEventListener("click", (e) => {
