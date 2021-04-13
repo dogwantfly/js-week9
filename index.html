@@ -15,7 +15,7 @@
 <body>
   <div class="container">
     <h2>前台</h2>
-    <div class="search-group d-flex">
+    <div class="search-group d-flex mb-4">
       <select name="" id="" class="form-select">
         <option value="">全部</option>
         <option value="收納">收納</option>
@@ -43,9 +43,15 @@
       </thead>
       <tbody id="frontEndTable">
       </tbody>
+      <tfoot>
+        <tr>
+            <td colspan="3" class="border-bottom-0">
+              <button type="button" id="removeCarts" class="btn btn-outline-primary">刪除所有品項</button>
+            </td>
+            <td class="total border-bottom-0" colspan="2"></td>
+        </tr>
+      </tfoot>
     </table>
-    <button type="button" id="removeCarts" class="btn btn-outline-primary">刪除所有品項</button>
-    <p class="total"></p>
     <hr>
 
     <h2>填寫預訂資料</h2>
@@ -57,7 +63,7 @@
       </div>
       <div class="mb-3">
         <label for="tel" class="form-label">電話</label>
-        <input type="text" class="form-control" id="tel" name="tel" placeholder="請輸入電話">
+        <input type="tel" class="form-control" id="tel" name="tel" placeholder="請輸入電話">
         <p class="error-text alert-warning tel"></p>
       </div>
       <div class="mb-3">

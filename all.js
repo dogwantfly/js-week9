@@ -10,9 +10,7 @@ let getProductList = () => {
   .get( url, config)
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     productData = response.data.products;
-    console.log(productData);
     renderProductList(productData)
   })
   .catch(function (error) {
@@ -22,7 +20,7 @@ let getProductList = () => {
 }
 getProductList();
 
-//--------------------------------------------------------------
+//-------------------------------------------------------------
 // 加入購物車
 
 let addCart = (productId, quantity) => {
@@ -39,7 +37,6 @@ let addCart = (productId, quantity) => {
   )
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     if (response.data.status) {
       alert(`成功加入購物車！`);
     }
@@ -56,7 +53,6 @@ productList.addEventListener("click", (e) => {
   e.preventDefault();
   let productId = e.target.dataset.id;
   let quantity;
-  console.log(cartListData.filter(cartItem => cartItem.product.id === productId));
   let productArray = cartListData.filter(cartItem => cartItem.product.id === productId)
   if (productArray.length > 0) {
     quantity = productArray[0].quantity + 1
@@ -82,14 +78,13 @@ let editCartQuantity = (cartId, quantity) => {
   )
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     cartListData = response.data.carts;
-    console.log(cartListData);
-    renderCartList(cartListData);
+    renderCartList(cartListData);   
+    alert("更改數量成功!")
   })
   .catch(function (error) {
     // 失敗會回傳的內容
-    console.log(error.response);
+    console.log(error);
     alert(error.response.data.message)
   });
 }
@@ -101,13 +96,15 @@ let renderProductList = (data) => {
   let str = "";
   data.forEach((product) => {
     str += `
-    <li class="col-md-3">
-    <div class="card">
+    <li class="col-md-3 mb-3">
+    <div class="card h-100">
       <img src="${product.images}" class="card-img-top" alt="...">
-      <div class="card-body">
-        <h5 class="card-title">${product.title}</h5>
-        <p class="card-text">${product.description}</p>
-        <div class="text-center">
+      <div class="d-flex flex-column justify-content-between h-100">
+        <div class="card-body">
+          <h5 class="card-title">${product.title}</h5>
+          <p class="card-text">${product.description}</p>
+        </div>
+        <div class="card-footer text-center bg-transparent border-top-0">
           <p class="card-text text-center">原價：<del>${product.origin_price}</del></p>
           <p class="card-text text-center fst-italic">$${product.price}</p>
           <a href="#" class="btn btn-primary d-inline-block btn-cart" data-id="${product.id}">加入購物車</a>
@@ -127,7 +124,6 @@ let productFilter = () => {
     if (productSelect.value) {
       return product.category === productSelect.value && (product.title).indexOf(searchInput.value) !== -1
     }
-    console.log((product.title).indexOf(searchInput.value));
     return (product.title).indexOf(searchInput.value) !== -1
   })
   renderProductList(filterArray)
@@ -141,10 +137,9 @@ let searchProduct = () => {
   let filterArray = [];
   filterArray = productData.filter(product => {
     if (productSelect.value) {
-      return product.category === productSelect.value && (product.title).indexOf(searchInput.value) !== -1
+      return product.category === productSelect.value && (product.title.toUpperCase()).indexOf(searchInput.value.toUpperCase()) !== -1
     }
-    console.log((product.title).indexOf(searchInput.value));
-    return (product.title).indexOf(searchInput.value) !== -1
+    return (product.title.toUpperCase()).indexOf(searchInput.value.toUpperCase()) !== -1
   })
   renderProductList(filterArray)
 }
@@ -158,9 +153,7 @@ let getCartList = () => {
   .get(url)
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     cartListData = response.data.carts;
-    console.log(cartListData);
     renderCartList(cartListData);
   })
   .catch(function (error) {
@@ -175,6 +168,7 @@ getCartList();
 const cartTable = document.querySelector("#frontEndTable");
 let renderCartList = (data) => {
   let str = "";
+  let totalPrice = 0;
   data.forEach((cart) => {
     str += `
     <tr data-id="${cart.id}">
@@ -193,8 +187,10 @@ let renderCartList = (data) => {
       <td>${cart.product.price * cart.quantity}</td>
       <td><a href="#" class="removeCartItem">x</a></td>
     </tr>`
+    totalPrice += (cart.product.price * cart.quantity)
   })
   cartTable.innerHTML = str;
+  document.querySelector(".total").textContent = `總金額：${totalPrice} 元`
 }
 // ------------------------------
 //刪除全部購物車內容
@@ -204,7 +200,7 @@ let deleteCartList = () => {
   axios.delete(url)
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
+    alert(response.data.message)
     getCartList();
   })
   .catch(function (error) {
@@ -221,7 +217,6 @@ let deleteCartProduct = (cartId) => {
   axios.delete(url)
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     getCartList();
     if (response.data.status) {
       alert(`成功刪除！`)
@@ -240,10 +235,8 @@ cartTable.addEventListener("click", (e) => {
   e.preventDefault();
   if (e.target.classList.contains("removeCartItem")) {
     let cart = cartListData.filter(cart => cart.product.title === e.target.closest("tr").querySelector("td").textContent.trim())
-    console.log(cart[0].id);
     deleteCartProduct(cart[0].id);
   } else if (e.target.classList.contains("btn", "btn-outline-secondary")) {
-    console.log(e.target)
     let quantity;
     if (e.target.textContent === "+") {
       quantity = Number(e.target.previousElementSibling.textContent)
@@ -254,7 +247,6 @@ cartTable.addEventListener("click", (e) => {
       quantity--;
     }
     let carttId = e.target.closest("tr").dataset.id;
-    console.log(carttId)
     editCartQuantity(carttId, quantity)
   }
 })
@@ -294,20 +286,17 @@ let constraints = {
   }
 };
 const form = document.querySelector(".form");
-const inputs = form.querySelectorAll("input[type=text],input[type=email],select")
+const inputs = form.querySelectorAll("input[type=text],input[type=email],input[type=tel],select")
 const inputArray = [...inputs];
 inputArray.forEach((item) => {
     item.addEventListener("change", (e) => {
-      console.log("change")
       item.nextElementSibling.textContent = "";
       handleFormSubmit(form);
     });
   });
 //表單驗證
 let handleFormSubmit = (form) => {
-  console.log("validate");
   let error = validate(form, constraints);
-  console.log(error);
   if (error) {
     Object.keys(error).forEach(
       (keys) => (document.querySelector(`.${keys}`).textContent = error[keys])
@@ -320,11 +309,7 @@ let handleFormSubmit = (form) => {
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   if (handleFormSubmit(form)) {
-    console.log("submit");
     sentOrder()
-    form.reset();
-  } else {
-    console.log("can't submit");
   }
 });
 
@@ -354,12 +339,12 @@ let sentOrder = () => {
   )
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     getOrderData();
     getCartList();
     renderCartList(cartListData);
     render(orderData);
     alert("成功送出訂單！")
+    form.reset();
   })
   .catch(function (error) {
     // 失敗會回傳的內容

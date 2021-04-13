@@ -23,7 +23,7 @@ let render = (data) => {
           if (index === 0) return;
           productTitleStr += `、${product.title}`
         })
-        console.log(productTitleStr);
+        let date = new Date(item.createdAt*1000).toLocaleString()
         str += `
         <tr>
           <td class="order-id">${item.id}</td>
@@ -31,7 +31,7 @@ let render = (data) => {
           <td>${item.user.address}</td>
           <td>${item.user.email}</td>
           <td class="text-truncate w-25">${productTitleStr}</td>
-          <td>${item.createdAt}</td>
+          <td>${date}</td>
           <td><a href="#" class="orderState">${orderStateStr}</a></td>
           <td><button type="button" class="btn btn-primary btn-delete">刪除</button></td>
         </tr>`
@@ -46,7 +46,6 @@ let getOrderData = () => {
   .get(url, config)
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     orderData = response.data.orders;
     if (orderData.length > 0) {
       addChart();
@@ -70,7 +69,6 @@ let modifyOrderData = (str,orderID) => {
     orderPaid = false;
   }
   const url = `${baseUrl}/api/livejs/v1/admin/${api_path}/orders`;
-  console.log(orderID);
 
   axios
     .put(
@@ -85,9 +83,9 @@ let modifyOrderData = (str,orderID) => {
     )
     .then(function (response) {
       // 成功會回傳的內容
-      console.log(response);
       orderData = response.data.orders;
       render(orderData);
+      alert("已更改訂單狀態！")
     })
     .catch(function (error) {
       // 失敗會回傳的內容
@@ -104,7 +102,6 @@ backendTable.addEventListener("click", (e) => {
 //------------------------------------------------------
 // c3 圖表
 let addChart = () => {
-  console.log(orderData);
   let columns = [];
     let productObj = {};
     orderData.forEach((item,index) => {
@@ -116,19 +113,29 @@ let addChart = () => {
         }
       })
     });
-    //console.log(productObj);
-    let productTitle = [];
-    productTitle = Object.keys(productObj);
-    // console.log(productTitle);
-    
-    productTitle.forEach((item) => {
-      columns.push([item, productObj[item]]);
-    });
-  console.log(columns);
+  let productTitle = [];
+  productTitle = Object.keys(productObj);
+  
+  productTitle.forEach((item) => {
+    columns.push([item, productObj[item]]);
+  });
+  let sortArr = [...columns];
+  sortArr.sort((a, b) => {
+      return b[1] - a[1];
+  })
+  if (sortArr.length > 3) {
+    let otherTotal = 0;
+    for (let i = 3; i < sortArr.length; i++) {
+        otherTotal += sortArr[i][1];
+    }
+    sortArr.splice(3);
+    sortArr.push(['其他', otherTotal]);
+  }
+  
   let revenueChart = c3.generate({
     bindto: "#revenueChart",
     data: {
-      columns: columns,
+      columns: sortArr,
       type: 'pie'
     },
     pie: {
@@ -137,7 +144,7 @@ let addChart = () => {
       }
     },
     color: {
-      pattern: ['#cd7b29', '#8bc5cd', '#5a9ca4', '#b4e6ee', '#832900', '#297383', '#e6ac5a' ,'#ffd56a']
+      pattern: ['#b4e6ee','#cd7b29', '#8bc5cd', '#5a9ca4']
     }
   });
 };
@@ -148,7 +155,6 @@ let deleteAllOrder = () => {
   axios.delete(url, config)
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     orderData = response.data.orders;
     if (orderData.length > 0) {
       addChart();
@@ -172,7 +178,6 @@ let deleteOrder = (orderId) => {
   axios.delete(url, config)
   .then(function (response) {
     // 成功會回傳的內容
-    console.log(response);
     orderData = response.data.orders;
     if (orderData.length > 0) {
       addChart();
@@ -191,8 +196,6 @@ let deleteOrder = (orderId) => {
 backendTable.addEventListener("click", (e) => {
   if (!(e.target.classList.contains("btn-delete"))) return;
   e.preventDefault();
-  console.log(e.target.closest("tr").querySelector("td").textContent);
   let order = orderData.filter(order => order.id === e.target.closest("tr").querySelector("td").textContent)
-  console.log(order[0].id);
   deleteOrder(order[0].id);
 })
