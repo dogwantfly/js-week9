@@ -40,7 +40,8 @@ let addCart = (productId, quantity) => {
     if (response.data.status) {
       alert(`成功加入購物車！`);
     }
-    getCartList();
+    cartListData = response.data.carts;
+    renderCartList(cartListData);
   })
   .catch(function (error) {
     // 失敗會回傳的內容
