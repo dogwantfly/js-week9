@@ -151,6 +151,10 @@ let addChart = () => {
 //------------------------------------------------------
 // 刪除全部訂單
 let deleteAllOrder = () => {
+  if (orderData.length < 1) {
+    alert('訂單為空');
+    return
+  }
   const url = `${baseUrl}/api/livejs/v1/admin/${api_path}/orders`;
   axios.delete(url, config)
   .then(function (response) {

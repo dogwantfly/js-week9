@@ -196,6 +196,10 @@ let renderCartList = (data) => {
 //刪除全部購物車內容
 const removeCartsBtn = document.querySelector("#removeCarts");
 let deleteCartList = () => {
+  if (cartListData.length < 1) {
+    alert("購物車為空");
+    return;
+  }
   const url = `${baseUrl}/api/livejs/v1/customer/${api_path}/carts`;
   axios.delete(url)
   .then(function (response) {
@@ -243,7 +247,14 @@ cartTable.addEventListener("click", (e) => {
       quantity++
     } else if (e.target.textContent === "-") {
       quantity = Number(e.target.nextElementSibling.textContent);
-      if (quantity <= 1) return;
+      if (quantity === 1) {
+        let message = confirm("商品即將移除");
+        if (message) {
+          let cart = cartListData.filter(cart => cart.product.title === e.target.closest("tr").querySelector("td").textContent.trim())
+          deleteCartProduct(cart[0].id);
+        }
+        return;
+      } 
       quantity--;
     }
     let carttId = e.target.closest("tr").dataset.id;
@@ -308,6 +319,10 @@ let handleFormSubmit = (form) => {
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
+  if (cartListData.length < 1) {
+    alert("購物車中無商品，請將商品加入購物車！");
+    return;
+  }
   if (handleFormSubmit(form)) {
     sentOrder()
   }
